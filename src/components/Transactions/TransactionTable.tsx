@@ -27,8 +27,8 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions }) => 
     setShowDeleteConfirm(id);
   };
 
-  const confirmDelete = (id: string) => {
-    deleteTransaction(id);
+  const confirmDelete = async (id: string) => {
+    await deleteTransaction(id);
     setShowDeleteConfirm(null);
   };
 

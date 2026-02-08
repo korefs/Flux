@@ -1,5 +1,5 @@
+import { Edit2, Plus, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
-import { Trash2, Edit2, Plus } from 'lucide-react';
 import { useFinance } from '../../contexts/FinanceContext';
 import { Category } from '../../types';
 import CategoryForm from './CategoryForm';
@@ -19,8 +19,8 @@ const CategoryList: React.FC = () => {
     setShowDeleteConfirm(id);
   };
 
-  const confirmDelete = (id: string) => {
-    deleteCategory(id);
+  const confirmDelete = async (id: string) => {
+    await deleteCategory(id);
     setShowDeleteConfirm(null);
   };
 
@@ -102,7 +102,7 @@ const CategoryList: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-500 dark:text-gray-400">
                 Cor: 
               </span>

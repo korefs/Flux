@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Edit2, Trash2, Pause, Play, RotateCcw, Calendar, DollarSign } from 'lucide-react';
-import { useFinance } from '../../contexts/FinanceContext';
-import { RecurringTransaction } from '../../types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Calendar, DollarSign, Edit2, Pause, Play, RotateCcw, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useFinance } from '../../contexts/FinanceContext';
+import { RecurringTransaction } from '../../types';
 
 interface RecurringTransactionListProps {
   onEdit?: (recurring: RecurringTransaction) => void;
@@ -17,12 +17,33 @@ const RecurringTransactionList: React.FC<RecurringTransactionListProps> = ({ onE
     return categories.find(category => category.id === id);
   };
 
-  const getFrequencyLabel = (frequency: string) => {
+  const getFrequencyLabel = (frequency: string, intervalMonths?: number | undefined) => {
     const labels = {
       monthly: 'Mensal',
       weekly: 'Semanal',
       yearly: 'Anual',
     };
+
+    if(frequency === 'custom') {
+      switch (intervalMonths) {
+        case 1:
+          return 'Mensal';
+        case 3:
+          return 'Trimestral';
+        case 6:
+          return 'Semestral';
+        case 12:
+          return 'Anual';
+        case 24:
+          return 'Bienal';
+        default:
+          return `A cada ${intervalMonths} meses`;
+    }
+
+  }
+
+
+
     return labels[frequency as keyof typeof labels] || frequency;
   };
 
@@ -30,9 +51,9 @@ const RecurringTransactionList: React.FC<RecurringTransactionListProps> = ({ onE
     updateRecurringTransaction(id, { isActive: !isActive });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (deleteConfirm === id) {
-      deleteRecurringTransaction(id);
+      await deleteRecurringTransaction(id);
       setDeleteConfirm(null);
     } else {
       setDeleteConfirm(id);
@@ -107,7 +128,7 @@ const RecurringTransactionList: React.FC<RecurringTransactionListProps> = ({ onE
                       {recurring.description}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {category?.name} • {getFrequencyLabel(recurring.frequency)}
+                      {category?.name} • {getFrequencyLabel(recurring.frequency, recurring.intervalMonths)}
                     </p>
                   </div>
                   <div className="text-right">

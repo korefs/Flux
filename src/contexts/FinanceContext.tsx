@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Transaction, Category, FinancialSummary, TransactionFilters, FinanceContextType, RecurringTransaction } from '../types';
 import { isWithinInterval, parseISO, startOfMonth, endOfMonth, addMonths, addWeeks, addYears, format, isSameMonth, isAfter } from 'date-fns';
+import { syncManager } from '../utils/syncManager';
+import { useAuth } from './AuthContext';
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
@@ -30,6 +32,7 @@ interface FinanceProviderProps {
 }
 
 export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) => {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem('transactions');
     return saved ? JSON.parse(saved) : [];
@@ -56,6 +59,59 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
   useEffect(() => {
     localStorage.setItem('recurringTransactions', JSON.stringify(recurringTransactions));
   }, [recurringTransactions]);
+
+  // Sync with Supabase when user logs in
+  useEffect(() => {
+    if (!user) {
+      syncManager.clearUserId();
+      return;
+    }
+
+    const syncOnLogin = async () => {
+      try {
+        syncManager.setUserId(user.id);
+
+        // Merge data from cloud and local storage
+        const mergedData = await syncManager.mergeData(
+          transactions,
+          categories,
+          recurringTransactions
+        );
+
+        // Update state with merged data
+        setTransactions(mergedData.transactions);
+        setCategories(mergedData.categories);
+        setRecurringTransactions(mergedData.recurringTransactions);
+
+        // Upload merged data to ensure consistency
+        await syncManager.uploadAllData(
+          mergedData.transactions,
+          mergedData.categories,
+          mergedData.recurringTransactions
+        );
+      } catch (error) {
+        console.error('Sync failed:', error);
+        // If sync fails, continue with local data
+      }
+    };
+
+    syncOnLogin();
+  }, [user]); // Only run when user changes, not on every data change
+
+  // Auto-sync to Supabase when data changes (debounced)
+  useEffect(() => {
+    if (!user) return;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        await syncManager.uploadAllData(transactions, categories, recurringTransactions);
+      } catch (error) {
+        console.error('Auto-sync failed:', error);
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [transactions, categories, recurringTransactions, user]);
 
   useEffect(() => {
     const generateRecurringTransactions = () => {
@@ -92,6 +148,28 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
             if (!lastGenerated || now.getFullYear() > lastGenerated.getFullYear()) {
               nextDate = new Date(now.getFullYear(), startDate.getMonth(), startDate.getDate());
               shouldGenerate = true;
+            }
+            break;
+          case 'custom':
+            if (recurring.intervalMonths) {
+              const monthsToAdd = recurring.intervalMonths;
+              if (!lastGenerated) {
+                // First generation: use start date
+                const startMonth = startOfMonth(startDate);
+                nextDate = new Date(startMonth.getFullYear(), startMonth.getMonth(), new Date(startDate).getDate());
+                shouldGenerate = true;
+              } else {
+                // Calculate next date based on interval
+                const lastMonth = startOfMonth(lastGenerated);
+                const nextMonthDate = addMonths(lastMonth, monthsToAdd);
+                const day = recurring.dayOfMonth || new Date(startDate).getDate();
+
+                // Check if we've passed the next scheduled date
+                if (isAfter(now, nextMonthDate) || isSameMonth(now, nextMonthDate)) {
+                  nextDate = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), Math.min(day, 28));
+                  shouldGenerate = true;
+                }
+              }
             }
             break;
         }
@@ -154,7 +232,17 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     );
   };
 
-  const deleteTransaction = (id: string) => {
+  const deleteTransaction = async (id: string) => {
+    // Delete from Supabase first (if logged in)
+    if (user) {
+      try {
+        await syncManager.deleteTransaction(id);
+      } catch (error) {
+        console.error('Failed to delete from Supabase:', error);
+        // Continue with local deletion even if Supabase fails
+      }
+    }
+    // Delete from local state
     setTransactions(prev => prev.filter(transaction => transaction.id !== id));
   };
 
@@ -166,7 +254,17 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     setCategories(prev => [...prev, newCategory]);
   };
 
-  const deleteCategory = (id: string) => {
+  const deleteCategory = async (id: string) => {
+    // Delete from Supabase first (if logged in)
+    if (user) {
+      try {
+        await syncManager.deleteCategory(id);
+      } catch (error) {
+        console.error('Failed to delete from Supabase:', error);
+        // Continue with local deletion even if Supabase fails
+      }
+    }
+    // Delete from local state
     setCategories(prev => prev.filter(category => category.id !== id));
   };
 
@@ -254,8 +352,31 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     );
   };
 
-  const deleteRecurringTransaction = (id: string) => {
+  const deleteRecurringTransaction = async (id: string) => {
+    // Delete from Supabase first (if logged in)
+    if (user) {
+      try {
+        await syncManager.deleteRecurringTransaction(id);
+      } catch (error) {
+        console.error('Failed to delete from Supabase:', error);
+        // Continue with local deletion even if Supabase fails
+      }
+    }
+    // Delete from local state
     setRecurringTransactions(prev => prev.filter(recurring => recurring.id !== id));
+  };
+
+  const manualSync = async () => {
+    if (!user) {
+      throw new Error('User must be logged in to sync');
+    }
+
+    try {
+      await syncManager.uploadAllData(transactions, categories, recurringTransactions);
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+      throw error;
+    }
   };
 
   const generateRecurringTransactions = () => {
@@ -292,6 +413,28 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
           if (!lastGenerated || now.getFullYear() > lastGenerated.getFullYear()) {
             nextDate = new Date(now.getFullYear(), startDate.getMonth(), startDate.getDate());
             shouldGenerate = true;
+          }
+          break;
+        case 'custom':
+          if (recurring.intervalMonths) {
+            const monthsToAdd = recurring.intervalMonths;
+            if (!lastGenerated) {
+              // First generation: use start date
+              const startMonth = startOfMonth(startDate);
+              nextDate = new Date(startMonth.getFullYear(), startMonth.getMonth(), new Date(startDate).getDate());
+              shouldGenerate = true;
+            } else {
+              // Calculate next date based on interval
+              const lastMonth = startOfMonth(lastGenerated);
+              const nextMonthDate = addMonths(lastMonth, monthsToAdd);
+              const day = recurring.dayOfMonth || new Date(startDate).getDate();
+
+              // Check if we've passed the next scheduled date
+              if (isAfter(now, nextMonthDate) || isSameMonth(now, nextMonthDate)) {
+                nextDate = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), Math.min(day, 28));
+                shouldGenerate = true;
+              }
+            }
           }
           break;
       }
@@ -345,6 +488,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
         updateRecurringTransaction,
         deleteRecurringTransaction,
         generateRecurringTransactions,
+        manualSync,
       }}
     >
       {children}

@@ -21,11 +21,12 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({
     amount: initialData?.amount?.toString() || '',
     categoryId: initialData?.categoryId || '',
     type: initialData?.type || 'expense' as 'income' | 'expense',
-    frequency: initialData?.frequency || 'monthly' as 'monthly' | 'weekly' | 'yearly',
+    frequency: initialData?.frequency || 'monthly' as 'monthly' | 'weekly' | 'yearly' | 'custom',
     startDate: initialData?.startDate || new Date().toISOString().split('T')[0],
     endDate: initialData?.endDate || '',
     dayOfMonth: initialData?.dayOfMonth?.toString() || '',
     dayOfWeek: initialData?.dayOfWeek?.toString() || '',
+    intervalMonths: initialData?.intervalMonths?.toString() || '3',
     isActive: initialData?.isActive ?? true,
   });
 
@@ -64,6 +65,13 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({
       }
     }
 
+    if (formData.frequency === 'custom') {
+      const months = parseInt(formData.intervalMonths);
+      if (!formData.intervalMonths || months < 1 || months > 60) {
+        newErrors.intervalMonths = 'Intervalo deve estar entre 1 e 60 meses';
+      }
+    }
+
     if (formData.endDate && formData.endDate <= formData.startDate) {
       newErrors.endDate = 'Data de fim deve ser posterior à data de início';
     }
@@ -87,6 +95,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({
       endDate: formData.endDate || undefined,
       dayOfMonth: formData.dayOfMonth ? parseInt(formData.dayOfMonth) : undefined,
       dayOfWeek: formData.dayOfWeek ? parseInt(formData.dayOfWeek) : undefined,
+      intervalMonths: formData.frequency === 'custom' ? parseInt(formData.intervalMonths) : undefined,
       isActive: formData.isActive,
     };
 
@@ -205,6 +214,7 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({
               <option value="monthly">Mensal</option>
               <option value="weekly">Semanal</option>
               <option value="yearly">Anual</option>
+              <option value="custom">Personalizado</option>
             </select>
           </div>
         </div>
@@ -254,6 +264,33 @@ const RecurringTransactionForm: React.FC<RecurringTransactionFormProps> = ({
               <option value="6">Sábado</option>
             </select>
             {errors.dayOfWeek && <p className="mt-1 text-sm text-red-600">{errors.dayOfWeek}</p>}
+          </div>
+        )}
+
+        {formData.frequency === 'custom' && (
+          <div>
+            <label htmlFor="intervalMonths" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              A Cada X Meses
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                id="intervalMonths"
+                min="1"
+                max="60"
+                value={formData.intervalMonths}
+                onChange={(e) => handleInputChange('intervalMonths', e.target.value)}
+                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                  errors.intervalMonths ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
+                placeholder="3"
+              />
+              <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">meses</span>
+            </div>
+            {errors.intervalMonths && <p className="mt-1 text-sm text-red-600">{errors.intervalMonths}</p>}
+            <p className="mt-1 text-xs text-gray-500">
+              Ex: 3 = trimestral, 6 = semestral, 12 = anual
+            </p>
           </div>
         )}
 
