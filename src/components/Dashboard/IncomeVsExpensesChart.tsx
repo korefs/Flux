@@ -1,8 +1,8 @@
-import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useFinance } from '../../contexts/FinanceContext';
-import { startOfMonth, endOfMonth, isWithinInterval, parseISO, format, subMonths } from 'date-fns';
+import { endOfMonth, format, isWithinInterval, parseISO, startOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React from 'react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useFinance } from '../../contexts/FinanceContext';
 
 const IncomeVsExpensesChart: React.FC = () => {
   const { transactions } = useFinance();
@@ -80,6 +80,7 @@ const IncomeVsExpensesChart: React.FC = () => {
     return null;
   };
 
+  // eslint-disable-next-line
   const maxValue = Math.max(
     ...monthlyData.map(d => Math.max(d.income, d.expenses))
   );

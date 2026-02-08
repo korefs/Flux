@@ -1,5 +1,5 @@
+import { Calendar, DollarSign, RotateCcw, Tag } from 'lucide-react';
 import React, { useState } from 'react';
-import { Calendar, DollarSign, Tag, Clock, RotateCcw } from 'lucide-react';
 import { useFinance } from '../../contexts/FinanceContext';
 import { RecurringTransaction } from '../../types';
 

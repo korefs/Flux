@@ -1,7 +1,7 @@
+import { endOfMonth, isWithinInterval, parseISO, startOfMonth } from 'date-fns';
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { useFinance } from '../../contexts/FinanceContext';
-import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 
 const ExpensesPieChart: React.FC = () => {
   const { transactions, categories } = useFinance();
@@ -41,6 +41,7 @@ const ExpensesPieChart: React.FC = () => {
     }, {} as Record<string, { name: string; value: number; color: string; count: number }>);
 
     return Object.values(categoryTotals).sort((a, b) => b.value - a.value);
+    // eslint-disable-next-line
   }, [transactions, categories]);
 
   const totalExpenses = expensesData.reduce((sum, item) => sum + item.value, 0);
@@ -65,6 +66,7 @@ const ExpensesPieChart: React.FC = () => {
     return null;
   };
 
+  // eslint-disable-next-line
   const CustomLegend = ({ payload }: any) => {
     return (
       <div className="flex flex-wrap justify-center gap-3 mt-4">

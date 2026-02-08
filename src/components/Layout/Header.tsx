@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Moon, Sun, Menu, Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { format } from 'date-fns';
+import { AlertCircle, CheckCircle, Cloud, CloudOff, Menu, Moon, RefreshCw, Sun } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFinance } from '../../contexts/FinanceContext';
-import { syncManager, SyncStatus } from '../../utils/syncManager';
-import { format } from 'date-fns';
+import { useTheme } from '../../contexts/ThemeContext';
+import { syncManager } from '../../utils/syncManager';
 
 interface HeaderProps {
   onMenuToggle: () => void;

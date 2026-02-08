@@ -65,8 +65,6 @@ const RecurringTransactionList: React.FC<RecurringTransactionListProps> = ({ onE
   };
 
   const getNextPaymentInfo = (recurring: RecurringTransaction) => {
-    const now = new Date();
-    const startDate = parseISO(recurring.startDate);
     
     if (recurring.lastGenerated) {
       const lastGenerated = parseISO(recurring.lastGenerated);

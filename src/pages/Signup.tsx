@@ -1,7 +1,7 @@
+import { AlertCircle, CheckCircle, Github, Lock, Mail } from 'lucide-react';
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Github, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();

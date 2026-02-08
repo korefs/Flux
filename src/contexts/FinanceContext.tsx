@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Transaction, Category, FinancialSummary, TransactionFilters, FinanceContextType, RecurringTransaction } from '../types';
-import { isWithinInterval, parseISO, startOfMonth, endOfMonth, addMonths, addWeeks, addYears, format, isSameMonth, isAfter } from 'date-fns';
+import { addMonths, endOfMonth, format, isAfter, isSameMonth, isWithinInterval, parseISO, startOfMonth } from 'date-fns';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { Category, FinanceContextType, FinancialSummary, RecurringTransaction, Transaction, TransactionFilters } from '../types';
 import { syncManager } from '../utils/syncManager';
 import { useAuth } from './AuthContext';
 
@@ -61,6 +61,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
   }, [recurringTransactions]);
 
   // Sync with Supabase when user logs in
+  // eslint-disable-next-line
   useEffect(() => {
     if (!user) {
       syncManager.clearUserId();
@@ -96,6 +97,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     };
 
     syncOnLogin();
+    // eslint-disable-next-line
   }, [user]); // Only run when user changes, not on every data change
 
   // Auto-sync to Supabase when data changes (debounced)
